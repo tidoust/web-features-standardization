@@ -37,6 +37,17 @@ for (const [feature, desc] of Object.entries(webFeatures)) {
   assert(specs.length > 0, `No spec found in web-specs for "${feature}"`);
 
   if ([false, 'low', 'high'].includes(desc.status.baseline)) {
+    if (desc.status.baseline === false) {
+      // Skip features that are supported in less than 2 distinct codebases
+      const codebases = new Set();
+      for (const browser of Object.keys(desc.status.support)) {
+        const codebase = browser === 'edge' ? 'chrome' : browser.split('_')[0];
+        codebases.add(codebase);
+      }
+      if (codebases.size <= 1) {
+        continue;
+      }
+    }
     // TODO: For features that are not yet baseline, filter out those that are
     // only implemented in one browser codebase (with Chrome and Edge counting
     // as only one codebase)
@@ -73,10 +84,10 @@ const formatList = list => list
 console.log(`
 ## Late incubations?
 
-This is a list of Baseline features defined in W3C specs that are still at the
-incubation phase. Beware, web-features tends to reference the latest level of a
-spec, but the feature may have appeared in a previous level, and that previous
-level may be on the Recommendation track.
+This is a list of well-supported features defined in W3C specs that are still
+at the incubation phase. Beware, web-features tends to reference the latest
+level of a spec, but the feature may have appeared in a previous level, and
+that previous level may be on the Recommendation track.
 
 <details>
   <summary>Baseline high features (${worthChecking.lateIncubation.high.length})</summary>
@@ -90,10 +101,16 @@ ${formatList(worthChecking.lateIncubation.high)}
 ${formatList(worthChecking.lateIncubation.low)}
 </details>
 
+<details>
+  <summary>Non-Baseline features (${worthChecking.lateIncubation[false].length})</summary>
+
+${formatList(worthChecking.lateIncubation[false])}
+</details>
+
 ## Worth publishing as Candidate Recommendation?
 
-This is a list of Baseline features defined in W3C specs that are still at the
-Working Draft phase. Same comment as above.
+This is a list of well-supported features defined in W3C specs that are still
+at the Working Draft phase. Same comment as above for levels!
 
 <details>
   <summary>Baseline high features (${worthChecking.lateWorkingDrafts.high.length})</summary>
@@ -105,6 +122,12 @@ ${formatList(worthChecking.lateWorkingDrafts.high)}
   <summary>Baseline low features (${worthChecking.lateWorkingDrafts.low.length})</summary>
 
 ${formatList(worthChecking.lateWorkingDrafts.low)}
+</details>
+
+<details>
+  <summary>Non-Baseline features (${worthChecking.lateWorkingDrafts[false].length})</summary>
+
+${formatList(worthChecking.lateWorkingDrafts[false])}
 </details>
   `);
 
