@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "web-features": "^0.5.1",
+    "web-specs": "^3.3.1"
+  }
+}
