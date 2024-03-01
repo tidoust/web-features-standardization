@@ -19,7 +19,7 @@ The code uses [Node.js](https://nodejs.org/en/). You'll need to install dependen
 node main.mjs
 ```
 
-This will output markdown to the console that contains lists of features and specs that might be worth checking from a standardization angle.
+This will output markdown to the console that contains lists of features and specs that might be worth checking from a standardization angle. See a [first dump in issue #1](https://github.com/tidoust/web-features-standardization/issues/1).
 
 
 ## Restrictions
