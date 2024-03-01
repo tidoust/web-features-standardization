@@ -2,13 +2,25 @@ import webFeatures from 'web-features';
 import webSpecs from 'web-specs/index.json' assert { type: 'json' };
 import assert from 'assert';
 
-const stableStatuses = [
+// A W3C specification starts becoming stable when it becomes a
+// Candidate Recommendation.
+const interoperableStatuses = [
   'Recommendation',
-  'Proposed Recommendation',
+  'Proposed Recommendation'
+];
+const stableStatuses = [
   'Candidate Recommendation Snapshot',
   'Candidate Recommendation Draft'
-];
+].concat(interoperableStatuses);
 
+// Divergences that may be worth looking into:
+// - late incubations contains well-supported features for which the underlying
+// W3C spec is still in incubation phase (not yet published under /TR)
+// - late working drafts contains well-supported features for which the
+// underlying W3C spec is on the Recommendation track, but not yet a
+// Candidate Recommendation.
+// - late implementations contains not-so-well-supported features for which the
+// underlying W3C spec is a Proposed Recommendation or Recommendation.
 const worthChecking = {
   lateIncubation: {
     high: [],
@@ -19,8 +31,27 @@ const worthChecking = {
     high: [],
     low: [],
     false: []
+  },
+  lateImplementations: {
+    high: [],
+    low: [],
+    false: []
   }
 };
+
+function recordPossibleAnomalies(anomaly, feature, baseline, specs) {
+  for (const spec of specs) {
+    worthChecking[anomaly][baseline].push({
+      feature,
+      spec: {
+        shortname: spec.shortname,
+        url: spec.url
+      }
+    });
+  }
+}
+
+
 
 for (const [feature, desc] of Object.entries(webFeatures)) {
   if (!desc.status) {
@@ -36,99 +67,84 @@ for (const [feature, desc] of Object.entries(webFeatures)) {
     urls.find(url => url.startsWith(s.url)));
   assert(specs.length > 0, `No spec found in web-specs for "${feature}"`);
 
+  // We're only interested in W3C specs for now
+  const w3cSpecs = specs.filter(s => s.organization === 'W3C');
+
   if ([false, 'low', 'high'].includes(desc.status.baseline)) {
+    // Assess whether feature is well supported or not-so-well supported.
     if (desc.status.baseline === false) {
-      // Skip features that are supported in less than 2 distinct codebases
       const codebases = new Set();
       for (const browser of Object.keys(desc.status.support)) {
         const codebase = browser === 'edge' ? 'chrome' : browser.split('_')[0];
         codebases.add(codebase);
       }
       if (codebases.size <= 1) {
+        recordPossibleAnomalies(
+          'lateImplementations',
+          feature, desc.status.baseline,
+          w3cSpecs.filter(spec =>
+            spec.release &&
+            interoperableStatuses.includes(spec.release.status))
+        );
         continue;
       }
     }
-    // TODO: For features that are not yet baseline, filter out those that are
-    // only implemented in one browser codebase (with Chrome and Edge counting
-    // as only one codebase)
 
-    const lateIncubation = specs.filter(spec => spec.organization === 'W3C' && !spec.release);
-    for (const spec of lateIncubation) {
-      worthChecking.lateIncubation[desc.status.baseline].push({
-        feature,
-        spec: {
-          shortname: spec.shortname,
-          url: spec.url
-        }
-      });
-    }
+    recordPossibleAnomalies(
+      'lateIncubation',
+      feature, desc.status.baseline,
+      w3cSpecs.filter(spec => !spec.release)
+    );
 
-    const lateWorkingDrafts = specs.filter(spec => spec.release && !stableStatuses.includes(spec.release.status));
-    for (const spec of lateWorkingDrafts) {
-      worthChecking.lateWorkingDrafts[desc.status.baseline].push({
-        feature,
-        spec: {
-          shortname: spec.shortname,
-          url: spec.url
-        }
-      });
-    }
+    recordPossibleAnomalies(
+      'lateWorkingDrafts',
+      feature, desc.status.baseline,
+      w3cSpecs.filter(spec =>
+        spec.release &&
+        !stableStatuses.includes(spec.release.status))
+    );
   }
 }
 
-const formatList = list => list
-  .map(f => `- \`${f.feature}\` in spec [${f.spec.shortname}](${f.spec.url})`)
-  .join('\n');
+const formatList = (title, list) => {
+  if (list.length === 0) {
+    return '';
+  }
+  const markdownList = list
+    .map(f => `- \`${f.feature}\` in spec [${f.spec.shortname}](${f.spec.url})`)
+    .join('\n');
+  return `
+<details>
+    <summary>${title} (${list.length})</summary>
 
+${markdownList}
+</details>
+  `;
+};
+
+const formatAnomalies = anomaly => {
+  const markdown =
+    formatList('Baseline high features', worthChecking[anomaly].high) +
+    formatList('Baseline low features', worthChecking[anomaly].low) +
+    formatList('Non-Baseline features', worthChecking[anomaly][false]);
+  return markdown || '\n*No problems found.*';
+};
 
 console.log(`
 ## Late incubations?
 
-This is a list of well-supported features defined in W3C specs that are still
-at the incubation phase. Beware, web-features tends to reference the latest
-level of a spec, but the feature may have appeared in a previous level, and
-that previous level may be on the Recommendation track.
-
-<details>
-  <summary>Baseline high features (${worthChecking.lateIncubation.high.length})</summary>
-
-${formatList(worthChecking.lateIncubation.high)}
-</details>
-
-<details>
-  <summary>Baseline low features (${worthChecking.lateIncubation.low.length})</summary>
-
-${formatList(worthChecking.lateIncubation.low)}
-</details>
-
-<details>
-  <summary>Non-Baseline features (${worthChecking.lateIncubation[false].length})</summary>
-
-${formatList(worthChecking.lateIncubation[false])}
-</details>
+Well-supported features defined in W3C specs that are still at an incubation
+phase.
+${formatAnomalies('lateIncubation')}
 
 ## Worth publishing as Candidate Recommendation?
 
-This is a list of well-supported features defined in W3C specs that are still
-at the Working Draft phase. Same comment as above for levels!
+Well-supported features defined in W3C specs that are still Working Drafts.
+${formatAnomalies('lateWorkingDrafts')}
 
-<details>
-  <summary>Baseline high features (${worthChecking.lateWorkingDrafts.high.length})</summary>
+## Missing implementations?
 
-${formatList(worthChecking.lateWorkingDrafts.high)}
-</details>
-
-<details>
-  <summary>Baseline low features (${worthChecking.lateWorkingDrafts.low.length})</summary>
-
-${formatList(worthChecking.lateWorkingDrafts.low)}
-</details>
-
-<details>
-  <summary>Non-Baseline features (${worthChecking.lateWorkingDrafts[false].length})</summary>
-
-${formatList(worthChecking.lateWorkingDrafts[false])}
-</details>
-  `);
-
-console.log('-----');
+Not-so-well supported features defined in W3C specs that are already
+Recommendation (or Proposed Recommendation).
+${formatAnomalies('lateImplementations')}
+`);
