@@ -52,7 +52,13 @@ function isRelevantSpec(spec, urls) {
       (spec.shortname === spec.series.currentSpecification && urls.find(url => url.startsWith(spec.series?.releaseUrl)));
 }
 
-
+/**
+ * Complete the given spec with the list of compat features that it defines in
+ * among the given list of compat features.
+ *
+ * The function returns a copy of the spec when it alters it to add a
+ * `compat_features` property, the spec itself otherwise.
+ */
 function completeWithCompatFeatures(spec, compat_features) {
   let copy = null;
   for (const feature of compat_features) {
