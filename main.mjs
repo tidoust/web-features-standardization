@@ -1,9 +1,11 @@
 import webFeatures from 'web-features';
+import bcd from '@mdn/browser-compat-data' assert { type: 'json' };
 import webSpecs from 'web-specs/index.json' assert { type: 'json' };
 import assert from 'assert';
 
 // A W3C specification starts becoming stable when it becomes a
-// Candidate Recommendation.
+// Candidate Recommendation. It starts becoming interoperable when
+// it gets published as a Proposed Recommendation.
 const interoperableStatuses = [
   'Recommendation',
   'Proposed Recommendation'
@@ -51,6 +53,28 @@ function recordPossibleAnomalies(anomaly, feature, baseline, specs) {
   }
 }
 
+function getBcdKey(key) {
+  const keyPath = key.split('.');
+  let currKey = bcd;
+  for (const level of keyPath) {
+    currKey = currKey[level];
+    if (!currKey) {
+      throw new Error(`BCD key "${key}" does not exist`);
+    }
+  }
+  if (!currKey.__compat) {
+    throw new Error(`BCD key "${key}" does not have compat data`);
+  }
+  return currKey.__compat;
+}
+
+function isRelevantSpec(spec, urls) {
+  return urls.find(url => url.startsWith(spec.nightly?.url)) ||
+      urls.find(url => url.startsWith(spec.release?.url)) ||
+      urls.find(url => url.startsWith(spec.url)) ||
+      (spec.shortname === spec.series.currentSpecification && urls.find(url => url.startsWith(spec.series?.nightlyUrl))) ||
+      (spec.shortname === spec.series.currentSpecification && urls.find(url => url.startsWith(spec.series?.releaseUrl)));
+}
 
 
 for (const [feature, desc] of Object.entries(webFeatures)) {
@@ -58,17 +82,37 @@ for (const [feature, desc] of Object.entries(webFeatures)) {
     continue;
   }
 
-  // Look for related spec entries in web-specs
-  assert(desc.spec, `"${feature}" does not link to any spec`);
-  const urls = Array.isArray(desc.spec) ? desc.spec : [desc.spec];
-  const specs = webSpecs.filter(s =>
-    urls.find(url => url.startsWith(s.nightly?.url)) ||
-    urls.find(url => url.startsWith(s.release?.url)) ||
-    urls.find(url => url.startsWith(s.url)));
-  assert(specs.length > 0, `No spec found in web-specs for "${feature}"`);
+  // Assemble the list of specs that define (part of) the feature
+  let specs;
+  if (desc.compat_features) {
+    // Feature links to BCD keys, extract the list of specs from there as
+    // BCD is far more specific than web-features
+    const urls = desc.compat_features
+      .map(getBcdKey)
+      .map(key => Array.isArray(key.spec_url) ? key.spec_url : [key.spec_url])
+      .flat()
+      .filter(url => !!url);
+    specs = webSpecs.filter(s => isRelevantSpec(s, urls));
+    if (urls.length > 0) {
+      assert(specs.length > 0, `No spec found in web-specs for "${feature}"`);
+    }
+  }
+  else {
+    // Feature does not link to BCD keys, use the info from web-features
+    // directly.
+    assert(desc.spec, `"${feature}" does not link to any spec`);
+    const urls = Array.isArray(desc.spec) ? desc.spec : [desc.spec];
+    specs = webSpecs.filter(s => isRelevantSpec(s, urls));
+    if (urls.length > 0) {
+      assert(specs.length > 0, `No spec found in web-specs for "${feature}"`);
+    }
+  }
 
   // We're only interested in W3C specs for now
   const w3cSpecs = specs.filter(s => s.organization === 'W3C');
+  if (w3cSpecs.length === 0) {
+    continue;
+  }
 
   if ([false, 'low', 'high'].includes(desc.status.baseline)) {
     // Assess whether feature is well supported or not-so-well supported.
@@ -111,7 +155,7 @@ const formatList = (title, list) => {
     return '';
   }
   const markdownList = list
-    .map(f => `- \`${f.feature}\` in spec [${f.spec.shortname}](${f.spec.url})`)
+    .map(f => `- \`${f.feature}\` uses concepts from [${f.spec.shortname}](${f.spec.url})`)
     .join('\n');
   return `
 <details>
