@@ -443,4 +443,4 @@ console.log(`
 - The spec approach does not yet compute Baseline **high** statuses.
 - The spec approach cannot filter out BCD keys that may be seen as less essential for common usage scenarios (e.g. some event constructors), as done in \`web-features\`.
 - The spec approach cannot distinguish sub-features within a spec. For instance, Speech Synthesis and Speech Recognition are seen as one feature. This also shows the importance of \`web-features\` to define more meaningful features.
-`););
+`);
