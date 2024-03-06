@@ -22,22 +22,46 @@ const stableStatuses = [
 ].concat(interoperableStatuses);
 
 /**
+ * Keep a mapping between a BCD key path and the key entry itself
+ */
+const bcdKeys = {};
+
+/**
  * Helper function to retrieve BCD support data from a key path such as
  * `css.properties.display.grid`.
  */
-function getBcdKey(key) {
+function getBcdKey(key, { support } = { support: false }) {
+  const cachedKey = bcdKeys[key];
+  if (cachedKey) {
+    if (support) {
+      return cachedKey.__compat;
+    }
+    else {
+      return cachedKey;
+    }
+  }
+
   const keyPath = key.split('.');
   let currKey = bcd;
   for (const level of keyPath) {
+    if (!level) {
+      break;
+    }
     currKey = currKey[level];
     if (!currKey) {
       throw new Error(`BCD key "${key}" does not exist`);
     }
   }
-  if (!currKey.__compat) {
-    throw new Error(`BCD key "${key}" does not have compat data`);
+  bcdKeys[key] = currKey;
+  if (support) {
+    if (!currKey.__compat) {
+      throw new Error(`BCD key "${key}" does not have compat data`);
+    }
+    return currKey.__compat;
   }
-  return currKey.__compat;
+  else {
+    return currKey;
+  }
 }
 
 /**
@@ -53,7 +77,7 @@ function isRelevantSpec(spec, urls) {
 }
 
 /**
- * Complete the given spec with the list of compat features that it defines in
+ * Complete the given spec with the list of compat features that it defines
  * among the given list of compat features.
  *
  * The function returns a copy of the spec when it alters it to add a
@@ -62,8 +86,8 @@ function isRelevantSpec(spec, urls) {
 function completeWithCompatFeatures(spec, compat_features) {
   let copy = null;
   for (const feature of compat_features) {
-    const bcdKey = getBcdKey(feature);
-    if (bcdKey.spec_url) {
+    const bcdKey = getBcdKey(feature, { support: true });
+    if (bcdKey?.spec_url) {
       const urls = Array.isArray(bcdKey.spec_url) ? bcdKey.spec_url : [bcdKey.spec_url];
       if (isRelevantSpec(spec, urls)) {
         if (!copy) {
@@ -91,11 +115,20 @@ const formatList = (title, list) => {
   const markdownList = list
     .map(f => {
       if (f.spec.compat_features) {
-        const compat = f.spec.compat_features.map(c => '`' + c + '`').join(', ');
-        return `- [${f.spec.shortname}](${f.spec.url}) defines BCD keys used in feature \`${f.feature}\`: ${compat}`;
+        const compat = f.spec.compat_features
+          .map(c => {
+            const key = getBcdKey(c, { support: true });
+            if (key?.mdn_url) {
+              return '  - [`' + c + '`](' + key.mdn_url + ')';
+            } else {
+              return '  - `' + c + '`';
+            }
+          })
+          .join('\n');
+        return `- [${f.spec.shortname}](${f.spec.url}) is referenced by BCD keys used to define feature \`${f.feature}\`:\n${compat}`;
       }
       else {
-        return `- [${f.spec.shortname}](${f.spec.url}) defines concepts used in feature \`${f.feature}\``;
+        return `- [${f.spec.shortname}](${f.spec.url}) is referenced by feature \`${f.feature}\``;
       }
     })
     .join('\n');
@@ -109,17 +142,16 @@ ${markdownList}
 };
 
 /**
- * Run an analysis starting from features in web-features
+ * Run an analysis starting from a collection of features, and output
+ * divergences that may be worth looking into, namely:
+ * - late incubations: well-supported features for which the underlying W3C
+ * spec is still in incubation phase (not yet published under /TR)
+ * - late working drafts: well-supported features for which the underlying W3C
+ * spec is on the Recommendation track, but not yet a Candidate Recommendation.
+ * - late implementations contains not-so-well-supported features for which the
+ * underlying W3C spec is a Proposed Recommendation or Recommendation.
  */
-function analyzeWebFeatures() {
-  // Divergences that may be worth looking into:
-  // - late incubations contains well-supported features for which the underlying
-  // W3C spec is still in incubation phase (not yet published under /TR)
-  // - late working drafts contains well-supported features for which the
-  // underlying W3C spec is on the Recommendation track, but not yet a
-  // Candidate Recommendation.
-  // - late implementations contains not-so-well-supported features for which the
-  // underlying W3C spec is a Proposed Recommendation or Recommendation.
+function analyzeFeatures(features, { useSpecsProperty } = { useSpecsProperty: false }) {
   const worthChecking = {
     lateIncubation: {
       high: [],
@@ -151,14 +183,14 @@ function analyzeWebFeatures() {
     }
   }
 
-  for (const [feature, desc] of Object.entries(webFeatures)) {
+  for (const [feature, desc] of Object.entries(features)) {
     if (!desc.status) {
       continue;
     }
 
     // Assemble the list of specs that define (part of) the feature
     let specs;
-    if (desc.compat_features) {
+    if (!useSpecsProperty && desc.compat_features) {
       // Feature links to BCD keys, extract the list of specs from there as
       // BCD is far more specific than web-features
       specs = webSpecs
@@ -166,13 +198,16 @@ function analyzeWebFeatures() {
         .filter(s => s.compat_features);
     }
     else {
-      // Feature does not link to BCD keys, use the info from web-features
-      // directly.
+      // Feature does not link to BCD keys, use the info from the `spec`
+      // property directly.
       assert(desc.spec, `"${feature}" does not link to any spec`);
       const urls = Array.isArray(desc.spec) ? desc.spec : [desc.spec];
       specs = webSpecs.filter(s => isRelevantSpec(s, urls));
       if (urls.length > 0) {
         assert(specs.length > 0, `No spec found in web-specs for "${feature}"`);
+      }
+      if (useSpecsProperty) {
+        specs = specs.map(spec => Object.assign({ compat_features: desc.compat_features }, spec));
       }
     }
 
@@ -245,5 +280,182 @@ function analyzeWebFeatures() {
   `);
 }
 
+/**
+ * Retrieve all BCD keys that map to the given spec
+ *
+ * The function expects the bcdKeys mapping table to have been initialized.
+ */
+function getAllBcdKeys(spec) {
+  const keys = [];
+  for (const [key, desc] of Object.entries(bcdKeys)) {
+    if (!desc.__compat) {
+      continue;
+    }
+    if (!desc.__compat.spec_url) {
+      continue;
+    }
+    const urls = Array.isArray(desc.__compat.spec_url) ?
+      desc.__compat.spec_url :
+      [desc.__compat.spec_url];
+    if (isRelevantSpec(spec, urls)) {
+      keys.push(key);
+    }
+  }
+  return keys;
+}
 
-analyzeWebFeatures();
+/**
+ * Traverse BCD features.
+ *
+ * Simplified version of:
+ * https://github.com/mdn/browser-compat-data/blob/main/scripts/traverse.ts#L22
+ */
+function* traverseBCDFeatures(key) {
+  if (key) {
+    const bcdKey = getBcdKey(key, { support: false });
+    for (const i in bcdKey) {
+      if (!!bcdKey[i] && typeof bcdKey[i] == 'object' && i !== '__compat') {
+        const subkey = key ? `${key}.${i}` : i;
+        yield subkey;
+        yield* traverseBCDFeatures(subkey);
+      }
+    }
+  }
+  else {
+    for (const rootLevel of [
+      'api', 'css', 'html', 'http', 'svg', 'javascript', 'mathml', 'webassembly', 'webdriver']
+    ) {
+      yield* traverseBCDFeatures(rootLevel);
+    }
+  }
+}
+
+
+/**
+ * Compute the support across browsers from a list of keys
+ */
+function getBrowserSupport(keys) {
+  const browsers = [
+    'chrome', 'chrome_android',
+    'edge',
+    'firefox', 'firefox_android',
+    'safari', 'safari_ios'
+  ];
+  const support = {};
+  const compatData = keys
+    .map(key => getBcdKey(key, { support: true }))
+    .filter(data => !!data);
+  for (const browser of browsers) {
+    support[browser] = '';
+    for (const data of compatData) {
+      let browserSupport = data.support?.[browser];
+      if (!browserSupport) {
+        support[browser] = '';
+        break;
+      }
+      if (Array.isArray(browserSupport)) {
+        browserSupport = browserSupport[0];
+      }
+      if (browserSupport.partial_implementation || browserSupport.flags) {
+        support[browser] = '';
+        break;
+      }
+      const versionAdded = browserSupport.version_added;
+      if (versionAdded) {
+        if (versionAdded > support[browser]) {
+          support[browser] = versionAdded;
+        }
+      }
+      else {
+        support[browser] = '';
+        break;
+      }
+    }
+  }
+  for (const browser of browsers) {
+    if (support[browser] === '') {
+      delete support[browser];
+    }
+  }
+  return support;
+}
+
+
+/**
+ * Run a spec analysis starting from BCD directly
+ */
+function analyzeBCD() {
+  // Initialize the flat list of BCD keys
+  for (const key of traverseBCDFeatures()) {
+    getBcdKey(key, { support: false });
+  }
+
+  // Initialize the list of spec "features" that we're interested in
+  const w3cSpecs = webSpecs.filter(s => s.organization === 'W3C');
+  const specFeatures = {};
+  for (const spec of w3cSpecs) {
+    const compat_features = getAllBcdKeys(spec);
+    if (compat_features.length > 0) {
+      const support = getBrowserSupport(compat_features);
+      /*if (Object.keys(support).length > 6) {
+        console.warn(spec.shortname, support, compat_features);
+      }*/
+      if (Object.keys(support).length > 0) {
+        specFeatures[spec.shortname] = {
+          compat_features,
+          status: {
+            baseline: (Object.keys(support).length > 6) ? 'low' : false,
+            support
+          },
+          spec: spec.url
+        };
+      }
+    }
+  }
+
+  analyzeFeatures(specFeatures, { useSpecsProperty: true });
+}
+
+
+/**
+ * Main starting point, run analyses in order.
+ */
+console.log(`
+# Analyzing features in \`web-features\`
+
+Features in \`web-features\` reference BCD keys (and/or specs directly). BCD
+keys can be used to collect a list of W3C specs that define concepts that
+compose a given feature. Comparing the Baseline status of the feature with the
+status of these specs on the [W3C Recommendation
+track](https://www.w3.org/2023/Process-20231103/#rec-track) yields the
+following lists of specs that may be worth looking into.
+`);
+analyzeFeatures(webFeatures);
+
+console.log(`
+# Analyzing W3C specs in web-specs
+
+To try to give a more complete perspective and highlight the need to have
+features defined in \`web-features\`, we can also map BCD keys directly to
+specs in \`web-specs\`, and consider that each spec defines a feature in
+itself for which we can compute a rough Baseline status from BCD support data.
+Running the same analysis with this new list of "features" yields the following
+lists of specs that may be worth looking into.
+`);
+analyzeBCD();
+
+console.log(`
+# Notes
+
+- The list of features in \`web-features\` is far from complete!
+- Specs listed in the \`web-features\` approach may well define other features
+that may, e.g., lack implementation support.
+- The spec approach does not yet compute Baseline **high** statuses.
+- The spec approach cannot filter out BCD keys that may be seen as less
+essential for common usage scenarios (e.g. some event constructors), as done in
+\`web-features\`.
+- The spec approach cannot distinguish sub-features within a spec. For
+instance, Speech Synthesis and Speech Recognition are seen as one feature. This
+also shows the importance of \`web-features\` to define more meaningful
+features.
+`);
