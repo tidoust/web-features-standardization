@@ -274,8 +274,7 @@ function analyzeFeatures(features, { useSpecsProperty } = { useSpecsProperty: fa
 
   ## Missing implementations?
 
-  W3C specs that are already Recommendation (or Proposed Recommendation) and that
-  define not-so-well supported features.
+  W3C specs that are already Recommendation (or Proposed Recommendation) and that define not-so-well supported features.
   ${formatAnomalies('lateImplementations')}
   `);
 }
@@ -423,24 +422,16 @@ function analyzeBCD() {
 console.log(`
 # Analyzing features in \`web-features\`
 
-Features in \`web-features\` reference BCD keys (and/or specs directly). BCD
-keys can be used to collect a list of W3C specs that define concepts that
-compose a given feature. Comparing the Baseline status of the feature with the
-status of these specs on the [W3C Recommendation
-track](https://www.w3.org/2023/Process-20231103/#rec-track) yields the
-following lists of specs that may be worth looking into.
+Features in \`web-features\` reference BCD keys (and/or specs directly). BCD keys can be used to collect a list of W3C specs that define concepts that compose a given feature.
+Comparing the Baseline status of the feature with the status of these specs on the [W3C Recommendation track](https://www.w3.org/2023/Process-20231103/#rec-track) yields the following lists of specs that may be worth looking into.
 `);
 analyzeFeatures(webFeatures);
 
 console.log(`
 # Analyzing W3C specs in web-specs
 
-To try to give a more complete perspective and highlight the need to have
-features defined in \`web-features\`, we can also map BCD keys directly to
-specs in \`web-specs\`, and consider that each spec defines a feature in
-itself for which we can compute a rough Baseline status from BCD support data.
-Running the same analysis with this new list of "features" yields the following
-lists of specs that may be worth looking into.
+To try to give a more complete perspective and highlight the need to have features defined in \`web-features\`, we can also map BCD keys directly to specs in \`web-specs\`, and consider that each spec defines a feature in itself for which we can compute a rough Baseline status from BCD support data.
+Running the same analysis with this new list of "features" yields the following lists of specs that may be worth looking into.
 `);
 analyzeBCD();
 
@@ -448,14 +439,8 @@ console.log(`
 # Notes
 
 - The list of features in \`web-features\` is far from complete!
-- Specs listed in the \`web-features\` approach may well define other features
-that may, e.g., lack implementation support.
+- Specs listed in the \`web-features\` approach may well define other features that may, e.g., lack implementation support.
 - The spec approach does not yet compute Baseline **high** statuses.
-- The spec approach cannot filter out BCD keys that may be seen as less
-essential for common usage scenarios (e.g. some event constructors), as done in
-\`web-features\`.
-- The spec approach cannot distinguish sub-features within a spec. For
-instance, Speech Synthesis and Speech Recognition are seen as one feature. This
-also shows the importance of \`web-features\` to define more meaningful
-features.
-`);
+- The spec approach cannot filter out BCD keys that may be seen as less essential for common usage scenarios (e.g. some event constructors), as done in \`web-features\`.
+- The spec approach cannot distinguish sub-features within a spec. For instance, Speech Synthesis and Speech Recognition are seen as one feature. This also shows the importance of \`web-features\` to define more meaningful features.
+`););
