@@ -163,7 +163,7 @@ function analyzeFeatures(features, { useSpecsProperty } = { useSpecsProperty: fa
       low: [],
       false: []
     },
-    lateImplementations: {
+    interoperableStatuses: {
       high: [],
       low: [],
       false: []
@@ -227,7 +227,7 @@ function analyzeFeatures(features, { useSpecsProperty } = { useSpecsProperty: fa
         }
         if (codebases.size <= 1) {
           recordPossibleAnomalies(
-            'lateImplementations',
+            'interoperableStatuses',
             feature, desc.status.baseline,
             w3cSpecs.filter(spec =>
               spec.release &&
@@ -235,6 +235,15 @@ function analyzeFeatures(features, { useSpecsProperty } = { useSpecsProperty: fa
           );
           continue;
         }
+      }
+      else {
+        recordPossibleAnomalies(
+          'interoperableStatuses',
+          feature, desc.status.baseline,
+          w3cSpecs.filter(spec =>
+            spec.release &&
+            interoperableStatuses.includes(spec.release.status))
+        );
       }
 
       recordPossibleAnomalies(
@@ -253,11 +262,11 @@ function analyzeFeatures(features, { useSpecsProperty } = { useSpecsProperty: fa
     }
   }
 
-  const formatAnomalies = anomaly => {
-    const markdown =
-      formatList('Specs linked to Baseline high features', worthChecking[anomaly].high) +
-      formatList('Specs linked to Baseline low features', worthChecking[anomaly].low) +
-      formatList('Specs linked to supported but not-yet-Baseline features', worthChecking[anomaly][false]);
+  const formatAnomalies = (anomaly, { only } = { only: null }) => {
+    const markdown = '' +
+      (((only === null) || only === 'high') ? formatList('Specs linked to Baseline high features', worthChecking[anomaly].high) : '') +
+      (((only === null) || only === 'low') ? formatList('Specs linked to Baseline low features', worthChecking[anomaly].low) : '') +
+      (((only === null) || only === false) ? formatList('Specs linked to supported-though-not-yet-Baseline features', worthChecking[anomaly][false]) : '');
     return markdown || '\n*No problems found.*';
   };
 
@@ -272,10 +281,10 @@ function analyzeFeatures(features, { useSpecsProperty } = { useSpecsProperty: fa
   W3C specs that are still Working Drafts and that define well-supported features.
   ${formatAnomalies('lateWorkingDrafts')}
 
-  ## Missing implementations?
+  ## Interoperable specs with missing implementations?
 
   W3C specs that are already Recommendation (or Proposed Recommendation) and that define not-so-well supported features.
-  ${formatAnomalies('lateImplementations')}
+  ${formatAnomalies('interoperableStatuses', { only: false })}
   `);
 }
 
@@ -329,22 +338,25 @@ function* traverseBCDFeatures(key) {
   }
 }
 
+/**
+ * List of browsers in core Baseline browser set
+ */
+const baselineBrowsers = [
+  'chrome', 'chrome_android',
+  'edge',
+  'firefox', 'firefox_android',
+  'safari', 'safari_ios'
+];
 
 /**
  * Compute the support across browsers from a list of keys
  */
 function getBrowserSupport(keys) {
-  const browsers = [
-    'chrome', 'chrome_android',
-    'edge',
-    'firefox', 'firefox_android',
-    'safari', 'safari_ios'
-  ];
   const support = {};
   const compatData = keys
     .map(key => getBcdKey(key, { support: true }))
     .filter(data => !!data);
-  for (const browser of browsers) {
+  for (const browser of baselineBrowsers) {
     support[browser] = '';
     for (const data of compatData) {
       let browserSupport = data.support?.[browser];
@@ -371,7 +383,7 @@ function getBrowserSupport(keys) {
       }
     }
   }
-  for (const browser of browsers) {
+  for (const browser of baselineBrowsers) {
     if (support[browser] === '') {
       delete support[browser];
     }
