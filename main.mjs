@@ -446,13 +446,3 @@ To try to give a more complete perspective and highlight the need to have featur
 Running the same analysis with this new list of "features" yields the following lists of specs that may be worth looking into.
 `);
 analyzeBCD();
-
-console.log(`
-# Notes
-
-- The list of features in \`web-features\` is far from complete!
-- Specs listed in the \`web-features\` approach may well define other features that may, e.g., lack implementation support.
-- The spec approach does not yet compute Baseline **high** statuses.
-- The spec approach cannot filter out BCD keys that may be seen as less essential for common usage scenarios (e.g. some event constructors), as done in \`web-features\`.
-- The spec approach cannot distinguish sub-features within a spec. For instance, Speech Synthesis and Speech Recognition are seen as one feature. This also shows the importance of \`web-features\` to define more meaningful features.
-`);

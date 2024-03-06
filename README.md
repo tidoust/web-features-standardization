@@ -22,14 +22,37 @@ node main.mjs
 This will output markdown to the console that contains lists of features and specs that might be worth checking from a standardization angle. See a [first dump in issue #1](https://github.com/tidoust/web-features-standardization/issues/1).
 
 
-## Restrictions
+## Restrictions & Comments
 
 ### The `spec` property in `web-features` is too coarse
 
-The code currently maps features to `web-specs` through the `spec` property in `web-features`. That property is too coarse to identify a precise problem. It seems better to first map features to [BCD](https://github.com/mdn/browser-compat-data?tab=readme-ov-file#mdnbrowser-compat-data) keys, and use BCD data for each of the keys to map the feature to a more complete list of specifications.
+The code maps features to `web-specs` through the [BCD](https://github.com/mdn/browser-compat-data?tab=readme-ov-file#mdnbrowser-compat-data) keys when it can because the `spec` property in `web-features` is too coarse to identify a precise set of specs.
 
 This does not necessarily mean that the contents of the `spec` property should be updated in `web-features`. Its goal is explicitly *not* to reproduce the information in BCD.
 
 ### When was a feature introduced?
 
-Regardless of the above, data in `web-features` and in BCD does not say when a feature was introduced, it merely points at the latest draft of the specification. This can be problematic when multiple levels or versions of a specification exist at different maturity levels, especially since, by definition, the latest level is going to be least advanced on the W3C's Recommendation track.
+Regardless of the above, data in `web-features` (and to some extent in BCD) does not say when a feature was introduced in a spec. It merely points at the unversioned URL of the specification. The code maps such BCD keys to the current specification in the series (identified by the `currentSpecification` property in `web-specs`) when that happens. That current specification may not be the correct version at which the version was introduced.
+
+This can be problematic when multiple levels or versions of a specification exist at different maturity levels.
+
+### Features coverage is far from complete
+
+The list of features in \`web-features\` is far from complete and only covers a tiny portion of the web platform so far. The analysis is by no means exhaustive as a result.
+
+To extend the coverage, the code runs the analysis a second time, starting from W3C specs defined in `web-specs` directly and pretending that these specs define individual features. For each of these spec features, the code compiles the list of BCD keys that reference the spec, and derives an approximated Baseline status. Note the code does not yet compute Baseline "high" statuses in that approach, only Baseline "low".
+
+By definition this approach cannot distinguish between sub-features within a spec. For instance, Speech Synthesis and Speech Recognition are seen as one feature: the Web Speech API. This is one of the added values of \`web-features\`: it helps define more meaningful features.
+
+### Developer perspective & Standardization perspective
+
+In \`web-features\`, editorial work makes it possible to refine the list of BCD keys that compose a feature, in particular to filter out keys that may be seen as non-essential by web developers for common usage scenarios (e.g., some event constructors). That filtering allows to set a Baseline status to a value that makes sense to developers.
+
+Now, there is no such thing as a *non-essential* feature or implementation bug from a standardization perspective. All features are considered essential as far as the Process is concerned. That said, the W3C Process does not require all (or any, really!) features to be implemented before a spec can transition to Candidate Recommendation, so there is no a priori reason for a spec to remain at the Working Draft stage if developers already perceive it as widely implemented.
+
+This situation still happens in practice. Reasons include:
+
+- The Working Group is not done adding new features to the spec, or is still discussing some of the other features that the spec defines. Could a more feature-based approach help groups publish standards sooner?
+- The Working Group uses a tighter and more real-time implementation experience loop to inform and revise the spec. This blurs the lines between the Working Draft and Candidate Recommendation stages, and tends to delay publication of specs as Candidate Recommendation until the Working Group is essentially done (scope, tests, implementations).
+- Failure to transition the spec out of incubation (charters cannot easily be modified, new working groups cannot easily be created, etc.).
+- Not enough editorial resources in the Working Group to progress specs.
