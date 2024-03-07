@@ -48,11 +48,11 @@ By definition this approach cannot distinguish between sub-features within a spe
 
 In \`web-features\`, editorial work makes it possible to refine the list of BCD keys that compose a feature, in particular to filter out keys that may be seen as non-essential by web developers for common usage scenarios (e.g., some event constructors). That filtering allows to set a Baseline status to a value that makes sense to developers.
 
-Now, there is no such thing as a *non-essential* feature or implementation bug from a standardization perspective. All features are considered essential as far as the Process is concerned. That said, the W3C Process does not require all (or any, really!) features to be implemented before a spec can transition to Candidate Recommendation, so there is no a priori reason for a spec to remain at the Working Draft stage if developers already perceive it as widely implemented.
+Now, there is no such thing as a *non-essential* feature or implementation bug from a standardization perspective. All features are considered essential as far as the Process is concerned. That said, the W3C Process does not require all (or any, really!) features to be implemented before a spec can transition to Candidate Recommendation, so there is no a priori process-related reason for a spec to remain at the Working Draft stage if developers already perceive it as widely implemented.
 
-This situation still happens in practice. Reasons include:
+This situation still happens in practice. Possible reasons include:
 
-- The Working Group is not done adding new features to the spec, or is still discussing some of the other features that the spec defines. Could a more feature-based approach help groups publish standards sooner?
-- The Working Group uses a tighter and more real-time implementation experience loop to inform and revise the spec. This blurs the lines between the Working Draft and Candidate Recommendation stages, and tends to delay publication of specs as Candidate Recommendation until the Working Group is essentially done (scope, tests, implementations).
+- The Working Group is not done adding new features to the spec, or is still discussing some of the other features that the spec defines. The Working Group may also not have requested horizontal reviews against the spec yet. Could a more feature-based approach help groups publish standards sooner?
+- The Working Group uses a tighter and more real-time feedback loop to inform and revise the spec based on implementation experience. This blurs the lines between the Working Draft and Candidate Recommendation stages, and tends to delay publication of specs as Candidate Recommendation until the Working Group is essentially done (scope, tests, implementations).
 - Failure to transition the spec out of incubation (charters cannot easily be modified, new working groups cannot easily be created, etc.).
 - Not enough editorial resources in the Working Group to progress specs.
