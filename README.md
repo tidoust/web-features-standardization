@@ -2,24 +2,28 @@
 
 **Note: This is an early exploration!**
 
-This repository contains experimental code to map the catalog of features defined in [`web-features`](https://github.com/web-platform-dx/web-features?tab=readme-ov-file#web-features-exploring-the-set-of-interoperable-features-of-the-web-platform) and standardization data about underlying specifications available in [`browser-specs`](https://github.com/w3c/browser-specs/?tab=readme-ov-file#web-specifications).
+This repository contains experimental code to map the catalog of features defined in [`web-features`](https://github.com/web-platform-dx/web-features?tab=readme-ov-file#web-features-exploring-the-set-of-interoperable-features-of-the-web-platform) and standardization data about underlying W3C specifications available in [`browser-specs`](https://github.com/w3c/browser-specs/?tab=readme-ov-file#web-specifications).
 
 The goals of this exploration are to:
 - Assess alignment between a developer-centric perspective of the web platform and a standardization-centric one. How do web developers perceive features vs. how W3C working groups see them.
 - Alert W3C groups about potential divergences that may be worth looking into between the standardization status of a specification and the implementation status of (some of) the features they define.
-- Provide input to W3C standardization process discussions related to transition requirements and interoperability
-- Evaluate additional data that may be worth tracking in the `web-features` project.
+- Provide input to W3C standardization process discussions related to transition requirements and interoperability.
+- Evaluate what additional data may be worth tracking in the `web-features` project.
 
 
 ## How to use
 
-The code uses [Node.js](https://nodejs.org/en/). You'll need to install dependencies first through a call to `npm ci`. You should then be able to run the code through:
+The code uses [Node.js](https://nodejs.org/en/). You'll need to install dependencies through a call to `npm ci`... which will fail at first because the code expects a local build of `web-features` (needed because the `web-features` package is not yet up-to-date).
+
+To create the local build of [`web-features`](https://github.com/web-platform-dx/web-features?tab=readme-ov-file), clone the `web-features` repository to the folder `../../web-platform-dx/web-features` from the folder where you cloned this repository, then run `npm ci` and `npm run build` in that folder.
+
+You should then be able to run the code through:
 
 ```
 node main.mjs
 ```
 
-This will output markdown to the console that contains lists of features and specs that might be worth checking from a standardization angle. See a [first dump in issue #1](https://github.com/tidoust/web-features-standardization/issues/1).
+This will output markdown to the console that contains lists of specs and features that might be worth checking from a standardization angle. See a [first dump in issue #1](https://github.com/tidoust/web-features-standardization/issues/1).
 
 
 ## Restrictions & Comments
@@ -32,7 +36,7 @@ This does not necessarily mean that the contents of the `spec` property should b
 
 ### When was a feature introduced?
 
-Regardless of the above, data in `web-features` (and to some extent in BCD) does not say when a feature was introduced in a spec. It merely points at the unversioned URL of the specification. The code maps such BCD keys to the current specification in the series (identified by the `currentSpecification` property in `web-specs`) when that happens. That current specification may not be the correct version at which the version was introduced.
+Regardless of the above, data in `web-features` (and to some extent in BCD) does not say when a feature was introduced in a spec. It often rather references the unversioned URL of a specification. The code maps such BCD keys to the current specification in the series (identified by the `currentSpecification` property in `web-specs`) when that happens. That current specification may not be the version at which the feature was introduced and stabilized.
 
 This can be problematic when multiple levels or versions of a specification exist at different maturity levels.
 
