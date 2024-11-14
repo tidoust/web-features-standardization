@@ -13,11 +13,7 @@ The goals of this exploration are to:
 
 ## How to use
 
-The code uses [Node.js](https://nodejs.org/en/). You'll need to install dependencies through a call to `npm ci`... which will fail at first because the code expects a local build of `web-features` (needed because the `web-features` package is not yet up-to-date).
-
-To create the local build of [`web-features`](https://github.com/web-platform-dx/web-features?tab=readme-ov-file), clone the `web-features` repository to the folder `../../web-platform-dx/web-features` from the folder where you cloned this repository, then run `npm ci` and `npm run build` in that folder.
-
-You should then be able to run the code through:
+The code uses [Node.js](https://nodejs.org/en/). You'll need to install dependencies through a call to `npm ci`. You should then be able to run the code through:
 
 ```
 node main.mjs

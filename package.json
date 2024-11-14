@@ -1,7 +1,7 @@
 {
   "dependencies": {
-    "web-features": "file:../../web-platform-dx/web-features/packages/web-features",
-    "web-specs": "3.6.0",
-    "@mdn/browser-compat-data": "5.5.17"
+    "web-features": "2.6.0",
+    "web-specs": "3.26.0",
+    "@mdn/browser-compat-data": "5.6.15"
   }
 }

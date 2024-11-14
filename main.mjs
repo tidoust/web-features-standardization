@@ -1,4 +1,4 @@
-import webFeatures from 'web-features';
+import { browsers, features, groups, snapshots } from 'web-features';
 import bcd from '@mdn/browser-compat-data' assert { type: 'json' };
 import webSpecs from 'web-specs/index.json' assert { type: 'json' };
 import assert from 'assert';
@@ -437,7 +437,7 @@ console.log(`
 Features in \`web-features\` reference BCD keys (and/or specs directly). BCD keys can be used to collect a list of W3C specs that define concepts that compose a given feature.
 Comparing the Baseline status of the feature with the status of these specs on the [W3C Recommendation track](https://www.w3.org/2023/Process-20231103/#rec-track) yields the following lists of specs that may be worth looking into.
 `);
-analyzeFeatures(webFeatures);
+analyzeFeatures(features);
 
 console.log(`
 # Analyzing W3C specs in web-specs
