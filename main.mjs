@@ -1,6 +1,6 @@
 import { browsers, features, groups, snapshots } from 'web-features';
-import bcd from '@mdn/browser-compat-data' assert { type: 'json' };
-import webSpecs from 'web-specs/index.json' assert { type: 'json' };
+import bcd from '@mdn/browser-compat-data' with { type: 'json' };
+import webSpecs from 'web-specs/index.json' with { type: 'json' };
 import assert from 'assert';
 
 /**
@@ -204,7 +204,9 @@ function analyzeFeatures(features, { useSpecsProperty } = { useSpecsProperty: fa
       const urls = Array.isArray(desc.spec) ? desc.spec : [desc.spec];
       specs = webSpecs.filter(s => isRelevantSpec(s, urls));
       if (urls.length > 0) {
-        assert(specs.length > 0, `No spec found in web-specs for "${feature}"`);
+        if (specs.length === 0) {
+          console.warn(`No spec found in web-specs for "${feature}"`);
+        }
       }
       if (useSpecsProperty) {
         specs = specs.map(spec => Object.assign({ compat_features: desc.compat_features }, spec));
@@ -271,21 +273,21 @@ function analyzeFeatures(features, { useSpecsProperty } = { useSpecsProperty: fa
   };
 
   console.log(`
-  ## Late incubations?
+## Late incubations?
 
-  W3C specs that are still in incubation and that define well-supported features.
-  ${formatAnomalies('lateIncubation')}
+W3C specs that are still in incubation and that define well-supported features.
+${formatAnomalies('lateIncubation')}
 
-  ## Worth publishing as Candidate Recommendation?
+## Worth publishing as Candidate Recommendation?
 
-  W3C specs that are still Working Drafts and that define well-supported features.
-  ${formatAnomalies('lateWorkingDrafts')}
+W3C specs that are still Working Drafts and that define well-supported features.
+${formatAnomalies('lateWorkingDrafts')}
 
-  ## Interoperable specs with missing implementations?
+## Interoperable specs with missing implementations?
 
-  W3C specs that are already Recommendation (or Proposed Recommendation) and that define not-so-well supported features.
-  ${formatAnomalies('interoperableStatuses', { only: false })}
-  `);
+W3C specs that are already Recommendation (or Proposed Recommendation) and that define not-so-well supported features.
+${formatAnomalies('interoperableStatuses', { only: false })}
+`);
 }
 
 /**

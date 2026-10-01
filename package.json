@@ -1,7 +1,7 @@
 {
   "dependencies": {
-    "web-features": "2.6.0",
-    "web-specs": "3.26.0",
-    "@mdn/browser-compat-data": "5.6.15"
+    "web-features": "3.40.1",
+    "web-specs": "4.16.0",
+    "@mdn/browser-compat-data": "8.1.4"
   }
 }
