@@ -1,4 +1,4 @@
-import { browsers, features, groups, snapshots } from 'web-features';
+import { features } from 'web-features';
 import bcd from '@mdn/browser-compat-data' with { type: 'json' };
 import webSpecs from 'web-specs/index.json' with { type: 'json' };
 import assert from 'assert';
